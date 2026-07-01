@@ -1,0 +1,24 @@
+import sqlite3
+
+conn = None
+try:
+    conn = sqlite3.connect('/usr/local/bin/ignition/data/config.idb')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT name, propvalue FROM GENERALPROPS 
+        WHERE name LIKE '%security%'
+        OR name LIKE '%config%'
+        OR name LIKE '%status%'
+        OR name LIKE '%role%'
+        OR name LIKE '%section%'
+    """)
+    rows = cursor.fetchall()
+    output = ""
+    for row in rows:
+        output += str(row[0]) + " = " + str(row[1]) + " | "
+    system.tag.writeBlocking(["[default]GatewayDBOutput"], [output])
+except Exception as e:
+    system.tag.writeBlocking(["[default]GatewayDBOutput"], [str(e)])
+finally:
+    if conn:
+        conn.close()
