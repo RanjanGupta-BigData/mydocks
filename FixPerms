@@ -22,3 +22,6 @@ except Exception as e:
 finally:
     if conn:
         conn.close()
+
+result = system.tag.readBlocking(["[default]GatewayDBOutput"])
+print(result[0].value)
