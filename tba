@@ -1,0 +1,27 @@
+
+I am currently working on the Andon2SCADA story (Tasks 614, 615, 616) and have made the following progress:
+
+✅ Task 614 — Ignition is successfully connected to the andon2Scada adapter (SimpleServer) and tags are visible in Designer.
+
+To proceed with the remaining tasks, I need your input on two things:
+
+1. UNS Tag Structure (Task 615)
+I need to reorganize the tags in Ignition's default tag provider following the UNS (Unified Namespace) hierarchy. Could you please confirm the expected folder/tag structure? For example:
+   Enterprise / Site / Area / Line / Cell / TagName
+
+Specifically:
+   - What should the top-level namespace look like for VCT/TBA?
+   - Should I map all tags from SimpleServer (ProducationFigures, Kpi, Locations etc.) or only specific ones?
+
+2. OPC UA Bind Address & Port (Task 616)
+The TBA WinCC Unified team needs to connect to Ignition's built-in OPC UA Server. Currently the Bind Address on gotsvl11296 is set to 'localhost', which means external clients cannot connect.
+
+   - Can I change the Bind Address from 'localhost' to '0.0.0.0' to allow external connections?
+   - Please confirm the correct port to share with the WinCC team (currently showing 62541)
+   - Are there any security/firewall considerations before making this change?
+
+Once I have your confirmation, I can complete both tasks and support the WinCC team to connect and validate the data.
+
+Thanks in advance!
+
+Best regards,
