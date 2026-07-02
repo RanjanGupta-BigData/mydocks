@@ -1,0 +1,27 @@
+floby emaail.
+
+Hi Floby Team,
+
+I hope you're doing well. I wanted to give you a heads-up regarding a configuration issue on our Ignition Gateway (flosvl1024.flo.volvocars.net) and the planned resolution.
+
+**What Happened**
+While setting up access restrictions for a new user/role on the Ignition Gateway, I accidentally modified the Config and Status section permissions in General Settings. As a result, the IgnitionAdmin account currently cannot access the Config and Status pages on the Gateway Webpage (port 8088).
+
+**Impact Assessment**
+I want to reassure you that this issue has NO impact on the following:
+
+- ✅ All running projects — fully operational
+- ✅ Designer access — you can continue working normally
+- ✅ Tags, OPC UA connections, and data pipelines — unaffected
+- ✅ Alarms and historians — running as expected
+- ✅ All existing user configurations — unchanged
+
+The issue is isolated to the Gateway Webpage Config/Status section access for IgnitionAdmin only.
+
+**Planned Fix**
+We have identified the exact fix — a targeted update to the gateway configuration database (config.idb) to restore the correct permission settings. The fix itself takes less than 2 minutes.
+
+However, to apply the change safely, we will need to restart the Ignition Gateway service, which will cause approximately 1-2 minutes of downtime. During this time:
+- Designer sessions will briefly disconnect and auto-reconnect
+- Projects will resume automatically after restart.
+- No data loss will occur
