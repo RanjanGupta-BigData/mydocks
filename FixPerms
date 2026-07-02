@@ -25,3 +25,42 @@ finally:
 
 result = system.tag.readBlocking(["[default]GatewayDBOutput"])
 print(result[0].value)
+============
+FIX
+python3
+import sqlite3
+conn = sqlite3.connect('/usr/local/bin/ignition/data/db/config.idb')
+cursor = conn.cursor()
+cursor.execute("SELECT CONFIGPERMISSIONS, HOMEPAGEPERMISSIONS FROM SYSPROPS;")
+backup = cursor.fetchall()
+print("BACKUP - Save this!")
+print(backup)
+conn.close()
+exit()
+==============
+Apply fix
+python3
+import sqlite3
+import json
+
+conn = sqlite3.connect('/usr/local/bin/ignition/data/db/config.idb')
+cursor = conn.cursor()
+
+# Validate JSON first
+fix = '{"type":"AnyOf","securityLevels":[{"name":"Administrator","children":[]},{"name":"FlobyDeveloper","children":[]}]}'
+json.loads(fix)
+print("JSON Valid!")
+
+# Apply fix
+cursor.execute("UPDATE SYSPROPS SET CONFIGPERMISSIONS=?;", (fix,))
+conn.commit()
+print("Fix applied!")
+
+# Verify
+cursor.execute("SELECT CONFIGPERMISSIONS FROM SYSPROPS;")
+print("New value: " + str(cursor.fetchall()))
+conn.close()
+exit()
+============
+systemctl restart ignition
+http://flosvl1024.flo.volvocars.net:8088
