@@ -1,67 +1,55 @@
+# -*- coding: utf-8 -*-
+import traceback
+
 def handleTimerEvent():
-    # -*- coding: utf-8 -*-
-    import traceback
+	log_name = "SAP.BufferStock"
+	logger = system.util.getLogger(log_name)
+	sap_url = "http://sapa10pas.got.volvocars.net:52000/RESTAdapter/StockLevel"
 
-    # 1. LOGGING
-    log_name = "SAP.BufferStock"
-    logger = system.util.getLogger(log_name)
+	globals_dict = system.util.getGlobals()
+	if "sapHttpClient" not in globals_dict:
+		globals_dict["sapHttpClient"] = system.net.httpClient(timeout=10000)
+	client = globals_dict["sapHttpClient"]
 
-    # 2. QA SAP API (no auth needed yet)
-    sap_url = "http://sapa10pas.got.volvocars.net:52000/RESTAdapter/StockLevel"
+	try:
+		headers = {
+			"Content-Type": "application/json",
+			"Accept": "application/json"
+		}
+		body = system.util.jsonEncode({"WareHouse": "BA76"})
+		logger.info("Calling SAP QA API...")
+		response = client.post(sap_url, headers=headers, data=body)
 
-    # 3. REUSE HTTP CLIENT
-    globals_dict = system.util.getGlobals()
-    if "sapHttpClient" not in globals_dict:
-        globals_dict["sapHttpClient"] = system.net.httpClient(timeout=10000)
-    client = globals_dict["sapHttpClient"]
+		if response.good:
+			payload = response.json
+			stock_levels = payload.get("StockLevel", [])
+			write_paths = []
+			write_values = []
+			current_time = system.date.now()
 
-    try:
-        # 4. CALL SAP QA API
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        body = system.util.jsonEncode({"WareHouse": "BA76"})
-        
-        logger.info("Calling SAP QA API...")
-        response = client.post(sap_url, headers=headers, data=body)
+			for item in stock_levels:
+				logger.info("Material:{} StorageType:{} Qty:{}".format(
+					item.get("Material"),
+					item.get("StorageType"),
+					item.get("Quantity")
+				))
 
-        # 5. HANDLE RESPONSE
-        if response.good:
-            payload = response.json
-            stock_levels = payload.get("StockLevel", [])
+			if stock_levels:
+				base_path = "[UNS]Volvo Cars/VCT/Buffer/CTB/BUF-VCT-CTB-A01/"
+				write_paths.append(base_path + "StockQty")
+				write_values.append(stock_levels[0].get("Quantity", 0))
+				write_paths.append(base_path + "LastUpdated")
+				write_values.append(current_time)
 
-            write_paths = []
-            write_values = []
-            current_time = system.date.now()
+			if write_paths:
+				results = system.tag.writeBlocking(write_paths, write_values)
+				errors = [write_paths[i] for i, res in enumerate(results) if not res.isGood()]
+				if errors:
+					logger.warn("Failed to write: {}".format(errors))
+				else:
+					logger.info("Successfully wrote {} tags".format(len(write_paths)))
+		else:
+			logger.error("SAP API error: {} {}".format(response.statusCode, response.text))
 
-            for item in stock_levels:
-                material     = item.get("Material")
-                storage_type = item.get("StorageType")
-                quantity     = item.get("Quantity")
-
-                logger.info("Material:{} StorageType:{} Qty:{}".format(
-                    material, storage_type, quantity))
-
-            # Write first item's Quantity to the tag
-            if stock_levels:
-                base_path = "[UNS]Volvo Cars/VCT/Buffer/CTB/BUF-VCT-CTB-A01/"
-                write_paths.append(base_path + "StockQty")
-                write_values.append(stock_levels[0].get("Quantity", 0))
-                write_paths.append(base_path + "LastUpdated")
-                write_values.append(current_time)
-
-            # 6. WRITE TO UNS TAGS
-            if write_paths:
-                results = system.tag.writeBlocking(write_paths, write_values)
-                errors = [write_paths[i] for i, res in enumerate(results) if not res.isGood()]
-                if errors:
-                    logger.warn("Failed to write: {}".format(errors))
-                else:
-                    logger.info("Successfully wrote {} tags".format(len(write_paths)))
-        else:
-            logger.error("SAP API error: {} {}".format(
-                response.statusCode, response.text))
-
-    except Exception as e:
-        logger.error("Exception: {}".format(traceback.format_exc()))
+	except Exception as e:
+		logger.error("Exception: {}".format(traceback.format_exc()))
